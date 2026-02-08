@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 GitHub Actions için YouTube M3U Oluşturucu
+Bu kod, streams.json'daki YouTube canlı yayınlarının akış linklerini alır
+ve yt.m3u adlı bir oynatma listesi dosyası oluşturur.
 """
 
 import json
@@ -15,6 +17,7 @@ def load_streams():
             return data.get('streams', [])
     except FileNotFoundError:
         print("HATA: streams.json dosyası bulunamadı!")
+        print("Lütfen kök dizinde streams.json dosyası oluşturun.")
         return []
     except json.JSONDecodeError:
         print("HATA: streams.json geçersiz JSON formatında!")
@@ -35,24 +38,24 @@ def get_stream_url(youtube_url):
             info = ydl.extract_info(youtube_url, download=False)
             return info.get('url') if info else None
     except Exception as e:
-        print(f"  ✗ Hata: {type(e).__name__}")
+        print(f"  ✗ Hata: {e}")
         return None
 
 def create_m3u():
     """M3U dosyasını oluşturur"""
     streams = load_streams()
     if not streams:
-        print("Yayın listesi boş!")
+        print("HATA: Yayın listesi boş veya yüklenemedi!")
         return False
     
-    print(f"Toplam {len(streams)} yayın işleniyor...")
+    print(f"📡 Toplam {len(streams)} yayın işleniyor...")
     
     m3u_entries = []
     successful = 0
     
-    for stream in streams:
-        print(f"\n{stream['name']}")
-        print(f"URL: {stream['url']}")
+    for idx, stream in enumerate(streams, 1):
+        print(f"\n[{idx}/{len(streams)}] {stream['name']}")
+        print(f"   🔗 {stream['url']}")
         
         stream_url = get_stream_url(stream['url'])
         if stream_url:
@@ -61,24 +64,31 @@ def create_m3u():
                 'url': stream_url
             })
             successful += 1
-            print(f"  ✓ Başarılı")
+            print(f"   ✅ Başarılı")
         else:
-            print(f"  ✗ Başarısız")
+            print(f"   ❌ Başarısız - Yayın kapalı veya erişilemez")
     
     # M3U dosyasını yaz
     if m3u_entries:
         with open('yt.m3u', 'w', encoding='utf-8') as f:
             f.write('#EXTM3U\n')
+            f.write('# YouTube Canlı Yayın Playlist\n')
+            f.write(f'# Otomatik oluşturuldu - {successful} yayın\n\n')
+            
             for entry in m3u_entries:
                 f.write(f'#EXTINF:-1, {entry["name"]}\n')
                 f.write(f'{entry["url"]}\n\n')
         
-        print(f"\n✅ {successful}/{len(streams)} yayın başarıyla eklendi")
-        print(f"📁 M3U dosyası: yt.m3u")
+        print(f"\n{'='*50}")
+        print(f"✅ BAŞARILI: {successful}/{len(streams)} yayın eklendi")
+        print(f"💾 Dosya: yt.m3u")
+        print(f"{'='*50}")
         return True
     
-    print("\n❌ Hiçbir yayın alınamadı!")
+    print("\n❌ HİÇBİR yayın alınamadı! Tüm yayınlar kapalı olabilir.")
     return False
 
 if __name__ == '__main__':
-    create_m3u()
+    success = create_m3u()
+    # GitHub Actions için çıkış kodu (0=başarılı, 1=başarısız)
+    exit(0 if success else 1)
