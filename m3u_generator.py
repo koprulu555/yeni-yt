@@ -27,7 +27,7 @@ def get_stream_url(youtube_url):
         'quiet': True,
         'no_warnings': True,
         'live_from_start': True,
-        # BOT ENGELİNİ AŞMAK İÇİN KRİTİK AYAR:
+        # Bot engelini aşmak için en etkili ayar
         'extractor_args': {'youtube': {'player_client': ['tv', 'android', 'web']}},
     }
     
