@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """
 GitHub Actions için YouTube M3U Oluşturucu
-Bu kod, streams.json'daki YouTube canlı yayınlarının akış linklerini alır
-ve yt.m3u adlı bir oynatma listesi dosyası oluşturur.
 """
 
 import json
@@ -17,7 +15,6 @@ def load_streams():
             return data.get('streams', [])
     except FileNotFoundError:
         print("HATA: streams.json dosyası bulunamadı!")
-        print("Lütfen kök dizinde streams.json dosyası oluşturun.")
         return []
     except json.JSONDecodeError:
         print("HATA: streams.json geçersiz JSON formatında!")
@@ -30,7 +27,8 @@ def get_stream_url(youtube_url):
         'quiet': True,
         'no_warnings': True,
         'live_from_start': True,
-        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
+        # BOT ENGELİNİ AŞMAK İÇİN KRİTİK AYAR:
+        'extractor_args': {'youtube': {'player_client': ['tv', 'android', 'web']}},
     }
     
     try:
@@ -66,7 +64,7 @@ def create_m3u():
             successful += 1
             print(f"   ✅ Başarılı")
         else:
-            print(f"   ❌ Başarısız - Yayın kapalı veya erişilemez")
+            print(f"   ❌ Başarısız")
     
     # M3U dosyasını yaz
     if m3u_entries:
@@ -85,10 +83,9 @@ def create_m3u():
         print(f"{'='*50}")
         return True
     
-    print("\n❌ HİÇBİR yayın alınamadı! Tüm yayınlar kapalı olabilir.")
+    print("\n❌ HİÇBİR yayın alınamadı!")
     return False
 
 if __name__ == '__main__':
     success = create_m3u()
-    # GitHub Actions için çıkış kodu (0=başarılı, 1=başarısız)
     exit(0 if success else 1)
