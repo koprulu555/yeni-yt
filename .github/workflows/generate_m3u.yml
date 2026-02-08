@@ -1,0 +1,40 @@
+name: Generate YouTube M3U Playlist
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Her 6 saatte bir çalışır
+  workflow_dispatch:  # Manuel çalıştırma için
+  push:
+    branches: [ main ]
+
+jobs:
+  generate-m3u:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install yt-dlp with all dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install "yt-dlp[default]"
+        
+    - name: Run M3U Generator
+      run: python m3u_generator.py
+      
+    - name: Commit and push if changed
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add yt.m3u
+        if ! git diff --cached --quiet; then
+          git commit -m "Update yt.m3u playlist"
+          git push
+        else
+          echo "No changes to commit"
+        fi
