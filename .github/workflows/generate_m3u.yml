@@ -1,40 +1,53 @@
 name: Generate YouTube M3U Playlist
+
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Her 6 saatte bir çalışır
-  workflow_dispatch:  # Manuel çalıştırma için
-  push:
-    branches: [ main ]
+    - cron: '0 */6 * * *'  # Her 6 saatte bir otomatik çalışır
+  workflow_dispatch:        # Manuel çalıştırma için buton ekler
 
 jobs:
   generate-m3u:
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: 📥 Repository'yi indir
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 🐍 Python'ı kur
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
         
-    - name: Install yt-dlp with all dependencies
+    - name: 📦 Gerekli programları yükle
       run: |
         python -m pip install --upgrade pip
         pip install "yt-dlp[default]"
         
-    - name: Run M3U Generator
-      run: python m3u_generator.py
-      
-    - name: Commit and push if changed
+    - name: 🚀 M3U dosyasını oluştur
+      id: generate
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add yt.m3u
-        if ! git diff --cached --quiet; then
-          git commit -m "Update yt.m3u playlist"
-          git push
+        python m3u_generator.py
+        # M3U dosyası oluştu mu kontrol et
+        if [ -f "yt.m3u" ]; then
+          echo "m3u_created=true" >> $GITHUB_OUTPUT
+          echo "✅ M3U dosyası oluşturuldu"
         else
-          echo "No changes to commit"
+          echo "m3u_created=false" >> $GITHUB_OUTPUT
+          echo "⚠️ M3U dosyası oluşturulamadı"
+        fi
+      
+    - name: 💾 Değişiklikleri GitHub'a kaydet
+      if: steps.generate.outputs.m3u_created == 'true'
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add yt.m3u
+        if git diff --cached --quiet; then
+          echo "📌 M3U dosyasında değişiklik yok"
+        else
+          git commit -m "🤖 Otomatik güncelleme: yt.m3u playlist"
+          git push
+          echo "🚀 Değişiklikler GitHub'a yüklendi"
         fi
